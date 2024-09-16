@@ -4,6 +4,12 @@ using UnityEngine;
 using UnityEditor;
 public class ReadMeshScrpt : EditorWindow
 {
+    private const int TrisSafeZone = 10000;
+    private const int TrisWarningZone = 50000;
+    private const int TrisDangerZone = 100000;
+
+
+
 
     private GameObject selectedGameObject;
     GameObject LastSelectedGameObject;
@@ -12,11 +18,7 @@ public class ReadMeshScrpt : EditorWindow
     int triangleCount;
     string MeshInfoText = "";
 
-    private const int TrisSafeZone = 10000;
-    private const int TrisWarningZone = 50000;
-    private const int TrisDangerZone = 100000;
 
-    bool CalculateWithAllChilds = false;
 
     
 
@@ -32,12 +34,7 @@ public class ReadMeshScrpt : EditorWindow
     public void OnGUI()
     {
         // add padding to text
-        GUIStyle style = new GUIStyle();
-        
-        style.fontSize = 16;
-        style.normal.textColor = Color.white;
-        // center the text
-        style.alignment = TextAnchor.MiddleCenter;
+        GUIStyle style = CreateGUIStyle(Color.white, 16, TextAnchor.MiddleCenter);
         
         GUILayout.Label("Show Triangle Count", style);
         
@@ -47,16 +44,13 @@ public class ReadMeshScrpt : EditorWindow
     
         // Gameobject seçme butonu
         selectedGameObject = (GameObject)EditorGUILayout.ObjectField("Choose a GameObject", selectedGameObject, typeof(GameObject), true);
-        CalculateWithAllChilds = EditorGUILayout.Toggle("Calculate with all childs", CalculateWithAllChilds);
         // ObjectField is variable is changed, it will be updated in the inspector
         if(selectedGameObject != null) {
-
-            if (CalculateWithAllChilds) {
-                CalculateTriangleCountWithAllChilds();
-            } 
-            else { CalculateTriangleCount(); }
+            // Get all meshfilters component in the selectedGameObject and its childrens
+            MeshFilter[] meshFilters = selectedGameObject.GetComponentsInChildren<MeshFilter>();
+            CalculateTriangleCount(meshFilters);
         }
-
+        
 
 
         GUIStyle bgColor = new GUIStyle();
@@ -79,12 +73,8 @@ public class ReadMeshScrpt : EditorWindow
         }
 
 
-        GUIStyle MeshAdviceTextStyle = new GUIStyle();
-        
-        MeshAdviceTextStyle.fontSize = 16;
-        
-        // center the text
-        MeshAdviceTextStyle.alignment = TextAnchor.MiddleCenter;
+        GUIStyle MeshAdviceTextStyle = CreateGUIStyle(Color.white, 16, TextAnchor.MiddleCenter);
+    
 
         string AdviceText = "";
         if (triangleCount > 0) {
@@ -111,119 +101,37 @@ public class ReadMeshScrpt : EditorWindow
         GUILayout.Label(AdviceText, MeshAdviceTextStyle);
 
 
-
-        // if (GUILayout.Button("Show Triangle Count"))
-        // {
-        //     CalculateTriangleCount();
-        // }
     }
-
-    public void CalculateTriangleCount()
+    public GUIStyle CreateGUIStyle(Color color , int fontSize, TextAnchor textAnchor)
     {
-        if (selectedGameObject == null)
-        {
-            Debug.LogError("GameObject seçilmedi.");
-            return;
-        }
-
-        MeshFilter meshFilter = selectedGameObject.GetComponent<MeshFilter>();
-
-        if (meshFilter != null)
-        {
-            Mesh mesh = meshFilter.sharedMesh;
-
-            if (mesh != null)
-            {
-                int _triangleCount = mesh.triangles.Length / 3;
-                MeshInfoText = "Triangle Count: " + _triangleCount;
-                triangleCount = _triangleCount;
-            }
-            else
-            {
-                MeshInfoText = "Mesh Not Found!";
-            }
-        }
-        else
-        {
-            
-            MeshInfoText = "MeshFilter Component Not Found!";
-        }
-    }
-
-    public void CalculateTriangleCountWithAllChilds() {
-        Debug.Log("CalculateTriangleCountWithAllChilds");
-        if (selectedGameObject == null)
-        {
-            Debug.LogError("GameObject seçilmedi.");
-            return;
-        }
-
-        MeshFilter[] meshFilters = selectedGameObject.GetComponentsInChildren<MeshFilter>();
-
-        if (meshFilters != null)
-        {
-            int _triangleCount = 0;
-            foreach (MeshFilter meshFilter in meshFilters) {
-                Mesh mesh = meshFilter.sharedMesh;
-                if (mesh != null)
-                {
-                    _triangleCount += mesh.triangles.Length / 3;
-                }
-            }
-            MeshInfoText = "Triangle Count: " + _triangleCount;
-            triangleCount = _triangleCount;
-        }
-        else
-        {
-            MeshInfoText = "Mesh Not Found!";
-        }
+        GUIStyle style = new GUIStyle();
+        style.normal.textColor = color;
+        style.fontSize = fontSize;
+        style.alignment = textAnchor;
+        return style;
     }
 
 
+     public void CalculateTriangleCount(params MeshFilter[] filters)
+ {
+     if (filters != null || filters.Length == 0)
+     {
+         int _triangleCount = 0;
 
-    // static void ShowTriangleCount()
-    // {
-    //     // Kullanıcıdan bir FBX veya OBJ dosyası seçmesini istiyoruz
-    //     string path = EditorUtility.OpenFilePanel("FBX veya OBJ dosyasını seçin", "Assets", "fbx,obj");
+         foreach (MeshFilter meshFilter in filters)
+         {
+             Mesh mesh = meshFilter.sharedMesh;
 
-    //     if (string.IsNullOrEmpty(path))
-    //     {
-    //         Debug.LogError("Dosya seçilmedi.");
-    //         return;
-    //     }
+             if (mesh is not null)
+                 _triangleCount += mesh.triangles.Length / 3;
+         }
+         MeshInfoText = "Triangle Count: " + _triangleCount;
+         triangleCount = _triangleCount;
+     }
+     else
+     {
+         MeshInfoText = "Mesh Not Found!";
+     }
+ }
 
-    //     // Path'i 'Assets/' ile başlatmamız gerekiyor
-    //     string relativePath = "Assets" + path.Substring(Application.dataPath.Length);
-
-    //     // Asset olarak model dosyasını yüklüyoruz
-    //     GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(relativePath);
-
-    //     if (model == null)
-    //     {
-    //         Debug.LogError("Model dosyası yüklenemedi.");
-    //         return;
-    //     }
-
-    //     // MeshFilter'i alıyoruz
-    //     MeshFilter meshFilter = model.GetComponentInChildren<MeshFilter>();
-
-    //     if (meshFilter != null)
-    //     {
-    //         Mesh mesh = meshFilter.sharedMesh;
-
-    //         if (mesh != null)
-    //         {
-    //             int triangleCount = mesh.triangles.Length / 3;
-    //             Debug.Log("Modelin üçgen sayısı: " + triangleCount);
-    //         }
-    //         else
-    //         {
-    //             Debug.LogError("Mesh bulunamadı!");
-    //         }
-    //     }
-    //     else
-    //     {
-    //         Debug.LogError("MeshFilter bileşeni bulunamadı!");
-    //     }
-    // }
 }
