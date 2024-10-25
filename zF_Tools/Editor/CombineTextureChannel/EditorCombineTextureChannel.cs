@@ -3,72 +3,140 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System;
+using System.IO;
 
 public class EditorCombineTextureChannel : EditorWindow
 {
 
+    ComputeShader CombineTextureShader;
     const float ChannelImageSize = 75;
-    const int FontSize = 20;
     Texture2D RedChannel;
     Texture2D GreenChannel;
     Texture2D BlueChannel;
     Texture2D AlphaChannel;
+    bool UseCPU;
+    
     [MenuItem("zF Tools/Combine Texture Channel")]
     private static void ShowWindow() {
         var window = GetWindow<EditorCombineTextureChannel>();
         window.titleContent = new GUIContent("Combine Texture Channels");
 
-        window.minSize = new Vector2(400, 400);  // Minimum boyut
-        window.maxSize = new Vector2(400, 800);  // Maksimum boyut
+        window.minSize = new Vector2(420, 150);  // Minimum boyut
+        window.maxSize = new Vector2(420, 150);  // Maksimum boyut
 
 
         window.Show();
     }
      private void OnGUI() {
-        GUIStyle style = new GUIStyle();
-        style.fontSize = FontSize;
-        style.normal.textColor = Color.white;
-
         
-        for (int i = 0; i < 4; i++) {
-            EditorGUILayout.Space();
-            EditorGUILayout.BeginHorizontal();
-            string ChannelName = "";
-            switch (i) {
-                case 0:
-                    RedChannel = (Texture2D) EditorGUILayout.ObjectField("", RedChannel, typeof (Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
-                    ChannelName = "Red Channel";
-                    break;
-                case 1:
-                    GreenChannel = (Texture2D) EditorGUILayout.ObjectField("", GreenChannel, typeof (Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
-                    ChannelName = "Green Channel";
-                    break;
-                case 2:
-                    BlueChannel = (Texture2D) EditorGUILayout.ObjectField("", BlueChannel, typeof (Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
-                    ChannelName = "Blue Channel";
-                    break;
-                case 3:
-                    AlphaChannel = (Texture2D) EditorGUILayout.ObjectField("", AlphaChannel, typeof (Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
-                    ChannelName = "Alpha Channel";
-                    break;
+        // load asset from resources
+        if (CombineTextureShader == null) {
+            CombineTextureShader = Resources.Load<ComputeShader>("CombineChannels");
+        }
+
+        GUIStyle style = new GUIStyle();
+        style.normal.textColor = Color.red;
+
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.FlexibleSpace();
+        
+        GUILayout.FlexibleSpace();
+        RedChannel = (Texture2D) EditorGUILayout.ObjectField("", RedChannel, typeof (Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
+
+        GUILayout.FlexibleSpace();
+        GreenChannel = (Texture2D) EditorGUILayout.ObjectField("", GreenChannel, typeof (Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
+
+        GUILayout.FlexibleSpace();
+        BlueChannel = (Texture2D) EditorGUILayout.ObjectField("", BlueChannel, typeof (Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
+
+        GUILayout.FlexibleSpace();
+        AlphaChannel = (Texture2D) EditorGUILayout.ObjectField("", AlphaChannel, typeof (Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
+
+
+
+
+            //GUILayout.Label(ChannelName, style, GUILayout.Width(200));
+            
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
+
+        GUILayout.FlexibleSpace();
+        if (RedChannel != null && GreenChannel != null && BlueChannel != null && AlphaChannel != null) {
+            UseCPU = GUILayout.Toggle(UseCPU, "Use CPU", GUILayout.Width(100), GUILayout.Height(30), GUILayout.ExpandWidth(false));
+            
+
+
+            // if texture sizes are not equal, show error message
+
+            if (RedChannel.width != GreenChannel.width || RedChannel.height != GreenChannel.height ||
+                GreenChannel.width != BlueChannel.width || GreenChannel.height != BlueChannel.height ||
+                BlueChannel.width != AlphaChannel.width || BlueChannel.height != AlphaChannel.height) {
+                    // textures resulotions are not equal if combine them, something can be wrong
+                GUILayout.Label("texture resolution are not equal if you combine, something can be wrong.", style, GUILayout.Width(400));
+            }
+            else {
+                // Create label and say "if you are get error, Use CPU"
+                GUILayout.Label("If you are get error, Use CPU", GUILayout.Width(200));
             }
 
 
-            GUILayout.Label(ChannelName, style, GUILayout.Width(200));
-            EditorGUILayout.EndHorizontal();
-        }
 
-        if (RedChannel != null && GreenChannel != null && BlueChannel != null && AlphaChannel != null) {
+
+
+
             if (GUILayout.Button("Combine")) {
-                CombineChannels();
+                if (UseCPU) {
+                    CombineChannels();
+                }
+                else {
+                    CombineWithCompute();
+                }
 
          }
 
     }
 }
+    private void CombineWithCompute() {
+        Debug.Log("Combine with Compute");
+        CombineTextureShader.SetTexture(0, "RedChannelTex", RedChannel);
+        CombineTextureShader.SetTexture(0, "GreenChannelTex", GreenChannel);
+        CombineTextureShader.SetTexture(0, "BlueChannelTex", BlueChannel);
+        CombineTextureShader.SetTexture(0, "AlphaChannelTex", AlphaChannel);
+
+        int kernel = CombineTextureShader.FindKernel("CSMain");
+
+        int width = RedChannel.width;
+        int height = RedChannel.height;
+
+        RenderTexture result = new RenderTexture(width, height, 0);
+        result.enableRandomWrite = true;
+        result.Create();
+
+        CombineTextureShader.SetTexture(kernel, "Result", result);
+        CombineTextureShader.Dispatch(kernel, width / 8, height / 8, 1);
+
+        RenderTexture.active = result;
+        Texture2D newTexture = new Texture2D(width, height);
+        newTexture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+        newTexture.Apply();
+
+        RenderTexture.active = null;
+        result.Release();
+
+        string path = EditorUtility.SaveFilePanel("Save Combined Texture", Application.dataPath, "CombinedTexture.png", "png");
+
+        if (!string.IsNullOrEmpty(path)) {
+            byte[] bytes = newTexture.EncodeToPNG();
+            System.IO.File.WriteAllBytes(path, bytes);
+            Debug.Log("Texture saved to: " + path);
+
+            AssetDatabase.Refresh();
+        }
+    }
 
     private void CombineChannels()
     {
+        Debug.Log("Combine with CPU");
         // Tüm texture'lerin aynı boyutta olup olmadığını kontrol et
         if (RedChannel.width != GreenChannel.width || RedChannel.height != GreenChannel.height ||
             GreenChannel.width != BlueChannel.width || GreenChannel.height != BlueChannel.height ||
