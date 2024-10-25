@@ -126,12 +126,15 @@ public class EditorCombineTextureChannel : EditorWindow
         string path = EditorUtility.SaveFilePanel("Save Combined Texture", Application.dataPath, "CombinedTexture.png", "png");
 
         if (!string.IsNullOrEmpty(path)) {
-            byte[] bytes = newTexture.EncodeToPNG();
-            System.IO.File.WriteAllBytes(path, bytes);
-            Debug.Log("Texture saved to: " + path);
-
-            AssetDatabase.Refresh();
+            SaveTextureAsPNG(newTexture, path);
         }
+        // if (!string.IsNullOrEmpty(path)) {
+        //     byte[] bytes = newTexture.EncodeToPNG();
+        //     System.IO.File.WriteAllBytes(path, bytes);
+        //     Debug.Log("Texture saved to: " + path);
+
+        //     AssetDatabase.Refresh();
+        // }
     }
 
     private void CombineChannels()
@@ -172,15 +175,31 @@ public class EditorCombineTextureChannel : EditorWindow
         // Yeni texture'ü bir dosya olarak kaydetmek için path seçtir
         string path = EditorUtility.SaveFilePanel("Save Combined Texture", Application.dataPath, "CombinedTexture.png", "png");
 
+
         if (!string.IsNullOrEmpty(path))
         {
-            // Texture'u PNG formatında kaydet
-            byte[] bytes = newTexture.EncodeToPNG();
-            System.IO.File.WriteAllBytes(path, bytes);
-            Debug.Log("Texture saved to: " + path);
-
-            // Asset Database'i yenileyin ki Unity texture'u görsün
-            AssetDatabase.Refresh();
+            SaveTextureAsPNG(newTexture, path);
         }
+
+        
+        // if (!string.IsNullOrEmpty(path))
+        // {
+        //     // Texture'u PNG formatında kaydet
+        //     byte[] bytes = newTexture.EncodeToPNG();
+        //     System.IO.File.WriteAllBytes(path, bytes);
+        //     Debug.Log("Texture saved to: " + path);
+
+        //     // Asset Database'i yenileyin ki Unity texture'u görsün
+        //     AssetDatabase.Refresh();
+        // }
     }
+
+    public void SaveTextureAsPNG(Texture2D _texture, string _path)
+    {
+        byte[] _bytes = _texture.EncodeToPNG();
+        File.WriteAllBytes(_path, _bytes);
+        AssetDatabase.Refresh();
+    }
+
+
 }
