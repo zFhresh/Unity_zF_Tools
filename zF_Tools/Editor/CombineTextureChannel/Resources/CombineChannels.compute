@@ -1,0 +1,105 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+Texture2D Image1;
+Texture2D Image2;
+Texture2D Image3;
+Texture2D Image4;
+
+int Image_1_ChannelOption;
+int Image_2_ChannelOption;
+int Image_3_ChannelOption;
+int Image_4_ChannelOption;
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+
+    float r = 0; //RedChannelTex[id.xy].r;
+
+    if (Image_1_ChannelOption == 0)
+    {
+        r = Image1[id.xy].r;
+    }
+    else if (Image_1_ChannelOption == 1)
+    {
+        r = Image1[id.xy].g;
+    }
+    else if (Image_1_ChannelOption == 2)
+    {
+        r = Image1[id.xy].b;
+    }
+    else if (Image_1_ChannelOption == 3)
+    {
+        r = Image1[id.xy].a;
+    }
+
+
+
+    float g = 0;  //= GreenChannelTex[id.xy].r;
+
+    if (Image_2_ChannelOption == 0)
+    {
+        g = Image2[id.xy].r;
+    }
+    else if (Image_2_ChannelOption == 1)
+    {
+        g = Image2[id.xy].g;
+    }
+    else if (Image_2_ChannelOption == 2)
+    {
+        g = Image2[id.xy].b;
+    }
+    else if (Image_2_ChannelOption == 3)
+    {
+        g = Image2[id.xy].a;
+    }
+
+
+
+    float b = 0; //= BlueChannelTex[id.xy].r;
+
+    if (Image_3_ChannelOption == 0)
+    {
+        b = Image3[id.xy].r;
+    }
+    else if (Image_3_ChannelOption == 1)
+    {
+        b = Image3[id.xy].g;
+    }
+    else if (Image_3_ChannelOption == 2)
+    {
+        b = Image3[id.xy].b;
+    }
+    else if (Image_3_ChannelOption == 3)
+    {
+        b = Image3[id.xy].a;
+    }
+
+
+    float a = 0; // = AlphaChannelTex[id.xy].r;
+
+    if (Image_4_ChannelOption == 0)
+    {
+        a = Image4[id.xy].r;
+    }
+    else if (Image_4_ChannelOption == 1)
+    {
+        a = Image4[id.xy].g;
+    }
+    else if (Image_4_ChannelOption == 2)
+    {
+        a = Image4[id.xy].b;
+    }
+    else if (Image_4_ChannelOption == 3)
+    {
+        a = Image4[id.xy].a;
+    }
+
+    
+    float4 l = float4(r, g, b, a);
+    
+    Result[id.xy] = l;
+}

@@ -7,74 +7,136 @@ using System.IO;
 
 public class EditorCombineTextureChannel : EditorWindow
 {
+    #region  RBGA Channel Options
+    private enum ChannelOption
+    {
+        R = 0,
+        G = 1,
+        B = 2,
+        A = 3
+    }
+
+    #endregion
+
+    private ChannelOption Image_1_ChannelOption = ChannelOption.R;
+    private ChannelOption Image_2_ChannelOption = ChannelOption.R;
+    private ChannelOption Image_3_ChannelOption = ChannelOption.R;
+    private ChannelOption Image_4_ChannelOption = ChannelOption.R;
+
+
 
     ComputeShader CombineTextureShader;
     const float ChannelImageSize = 75;
-    Texture2D RedChannel;
-    Texture2D GreenChannel;
-    Texture2D BlueChannel;
-    Texture2D AlphaChannel;
+    Texture2D Image1;
+    Texture2D Image2;
+    Texture2D Image3;
+    Texture2D Image4;
     bool UseCPU;
-    
+
     [MenuItem("zF Tools/Combine Texture Channel")]
-    private static void ShowWindow() {
+    private static void ShowWindow()
+    {
         var window = GetWindow<EditorCombineTextureChannel>();
         window.titleContent = new GUIContent("Combine Texture Channels");
 
-        window.minSize = new Vector2(420, 150);  // Minimum boyut
-        window.maxSize = new Vector2(420, 150);  // Maksimum boyut
+        window.minSize = new Vector2(420, 190);  // Minimum boyut
+        window.maxSize = new Vector2(420, 190);  // Maksimum boyut
 
 
         window.Show();
     }
-     private void OnGUI() {
-        
+    private void OnGUI()
+    {
+
         // load asset from resources
-        if (CombineTextureShader == null) {
+        if (CombineTextureShader == null)
+        {
             CombineTextureShader = Resources.Load<ComputeShader>("CombineChannels");
         }
+
+        GUIStyle RGBATextStyle = new GUIStyle();
+        RGBATextStyle.alignment = TextAnchor.MiddleCenter;
+        RGBATextStyle.fontStyle = FontStyle.Bold;
+        RGBATextStyle.fontSize = 15;
+        RGBATextStyle.normal.textColor = Color.white;
 
         GUIStyle style = new GUIStyle();
         style.normal.textColor = Color.red;
 
+        // R G B A Options
         EditorGUILayout.BeginHorizontal();
         GUILayout.FlexibleSpace();
-        
-        GUILayout.FlexibleSpace();
-        RedChannel = (Texture2D) EditorGUILayout.ObjectField("", RedChannel, typeof (Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
 
         GUILayout.FlexibleSpace();
-        GreenChannel = (Texture2D) EditorGUILayout.ObjectField("", GreenChannel, typeof (Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
+        //Label
+        GUILayout.Label("R", RGBATextStyle, GUILayout.Width(100));
+        GUILayout.FlexibleSpace();
+        GUILayout.Label("G", RGBATextStyle, GUILayout.Width(100));
 
         GUILayout.FlexibleSpace();
-        BlueChannel = (Texture2D) EditorGUILayout.ObjectField("", BlueChannel, typeof (Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
+        GUILayout.Label("B", RGBATextStyle, GUILayout.Width(100));
 
         GUILayout.FlexibleSpace();
-        AlphaChannel = (Texture2D) EditorGUILayout.ObjectField("", AlphaChannel, typeof (Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
+        GUILayout.Label("A", RGBATextStyle, GUILayout.Width(100));
+        //GUILayout.Label(ChannelName, style, GUILayout.Width(200));
+
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
 
 
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.FlexibleSpace();
 
+        GUILayout.FlexibleSpace();
+        Image1 = (Texture2D)EditorGUILayout.ObjectField("", Image1, typeof(Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
 
-            //GUILayout.Label(ChannelName, style, GUILayout.Width(200));
-            
+        GUILayout.FlexibleSpace();
+        Image2 = (Texture2D)EditorGUILayout.ObjectField("", Image2, typeof(Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
+
+        GUILayout.FlexibleSpace();
+        Image3 = (Texture2D)EditorGUILayout.ObjectField("", Image3, typeof(Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
+
+        GUILayout.FlexibleSpace();
+        Image4 = (Texture2D)EditorGUILayout.ObjectField("", Image4, typeof(Texture2D), false, GUILayout.Width(ChannelImageSize), GUILayout.Height(ChannelImageSize));
+
+        //GUILayout.Label(ChannelName, style, GUILayout.Width(200));
+
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.FlexibleSpace();
+
+        GUILayout.FlexibleSpace();
+        Image_1_ChannelOption = (ChannelOption)EditorGUILayout.EnumPopup(Image_1_ChannelOption, GUILayout.Width(75));
+
+        GUILayout.FlexibleSpace();
+        Image_2_ChannelOption = (ChannelOption)EditorGUILayout.EnumPopup(Image_2_ChannelOption, GUILayout.Width(75));
+        GUILayout.FlexibleSpace();
+        Image_3_ChannelOption = (ChannelOption)EditorGUILayout.EnumPopup(Image_3_ChannelOption, GUILayout.Width(75));
+        GUILayout.FlexibleSpace();
+        Image_4_ChannelOption = (ChannelOption)EditorGUILayout.EnumPopup(Image_4_ChannelOption, GUILayout.Width(75));
         GUILayout.FlexibleSpace();
         EditorGUILayout.EndHorizontal();
 
         GUILayout.FlexibleSpace();
-        if (RedChannel != null && GreenChannel != null && BlueChannel != null && AlphaChannel != null) {
+        if (Image1 != null && Image2 != null && Image3 != null && Image4 != null)
+        {
             UseCPU = GUILayout.Toggle(UseCPU, "Use CPU", GUILayout.Width(100), GUILayout.Height(30), GUILayout.ExpandWidth(false));
-            
+
 
 
             // if texture sizes are not equal, show error message
 
-            if (RedChannel.width != GreenChannel.width || RedChannel.height != GreenChannel.height ||
-                GreenChannel.width != BlueChannel.width || GreenChannel.height != BlueChannel.height ||
-                BlueChannel.width != AlphaChannel.width || BlueChannel.height != AlphaChannel.height) {
-                    // textures resulotions are not equal if combine them, something can be wrong
+            if (Image1.width != Image2.width || Image1.height != Image2.height ||
+                Image2.width != Image3.width || Image2.height != Image3.height ||
+                Image3.width != Image4.width || Image3.height != Image4.height)
+            {
+                // textures resulotions are not equal if combine them, something can be wrong
                 GUILayout.Label("texture resolution are not equal if you combine, something can be wrong.", style, GUILayout.Width(400));
             }
-            else {
+            else
+            {
                 // Create label and say "if you are get error, Use CPU"
                 GUILayout.Label("If you are get error, Use CPU", GUILayout.Width(200));
             }
@@ -84,29 +146,39 @@ public class EditorCombineTextureChannel : EditorWindow
 
 
 
-            if (GUILayout.Button("Combine")) {
-                if (UseCPU) {
+            if (GUILayout.Button("Combine"))
+            {
+                if (UseCPU)
+                {
                     CombineChannels();
                 }
-                else {
+                else
+                {
                     CombineWithCompute();
                 }
 
-         }
+            }
 
+        }
     }
-}
-    private void CombineWithCompute() {
+    private void CombineWithCompute()
+    {
         Debug.Log("Combine with Compute");
-        CombineTextureShader.SetTexture(0, "RedChannelTex", RedChannel);
-        CombineTextureShader.SetTexture(0, "GreenChannelTex", GreenChannel);
-        CombineTextureShader.SetTexture(0, "BlueChannelTex", BlueChannel);
-        CombineTextureShader.SetTexture(0, "AlphaChannelTex", AlphaChannel);
+        CombineTextureShader.SetTexture(0, "Image1", Image1);
+        CombineTextureShader.SetTexture(0, "Image2", Image2);
+        CombineTextureShader.SetTexture(0, "Image3", Image3);
+        CombineTextureShader.SetTexture(0, "Image4", Image4);
+
+        CombineTextureShader.SetInt("Image_1_ChannelOption", (int)Image_1_ChannelOption);
+        CombineTextureShader.SetInt("Image_2_ChannelOption", (int)Image_2_ChannelOption);
+        CombineTextureShader.SetInt("Image_3_ChannelOption", (int)Image_3_ChannelOption);
+        CombineTextureShader.SetInt("Image_4_ChannelOption", (int)Image_4_ChannelOption);
+
 
         int kernel = CombineTextureShader.FindKernel("CSMain");
 
-        int width = RedChannel.width;
-        int height = RedChannel.height;
+        int width = Image1.width;
+        int height = Image1.height;
 
         RenderTexture result = new RenderTexture(width, height, 0);
         result.enableRandomWrite = true;
@@ -125,7 +197,8 @@ public class EditorCombineTextureChannel : EditorWindow
 
         string path = EditorUtility.SaveFilePanel("Save Combined Texture", Application.dataPath, "CombinedTexture.png", "png");
 
-        if (!string.IsNullOrEmpty(path)) {
+        if (!string.IsNullOrEmpty(path))
+        {
             SaveTextureAsPNG(newTexture, path);
         }
         // if (!string.IsNullOrEmpty(path)) {
@@ -141,28 +214,98 @@ public class EditorCombineTextureChannel : EditorWindow
     {
         Debug.Log("Combine with CPU");
         // Tüm texture'lerin aynı boyutta olup olmadığını kontrol et
-        if (RedChannel.width != GreenChannel.width || RedChannel.height != GreenChannel.height ||
-            GreenChannel.width != BlueChannel.width || GreenChannel.height != BlueChannel.height ||
-            BlueChannel.width != AlphaChannel.width || BlueChannel.height != AlphaChannel.height)
+        if (Image1.width != Image2.width || Image1.height != Image2.height ||
+            Image2.width != Image3.width || Image2.height != Image3.height ||
+            Image3.width != Image4.width || Image3.height != Image4.height)
         {
             Debug.LogError("All textures must have the same dimensions to combine them.");
             return;
         }
 
         // Yeni bir Texture2D oluştur (aynı boyutta)
-        Texture2D newTexture = new Texture2D(RedChannel.width, RedChannel.height, TextureFormat.RGBA32, false);
+        Texture2D newTexture = new Texture2D(Image1.width, Image1.height, TextureFormat.RGBA32, false);
 
         // Tüm pikselleri karıştır
-        for (int y = 0; y < RedChannel.height; y++)
+        for (int y = 0; y < Image1.height; y++)
         {
-            for (int x = 0; x < RedChannel.width; x++)
+            for (int x = 0; x < Image1.width; x++)
             {
                 // Her kanaldan piksel bilgilerini al
-                float r = RedChannel.GetPixel(x, y).r;     // Red kanalındaki değer
-                float g = GreenChannel.GetPixel(x, y).r;   // Green kanalındaki değer
-                float b = BlueChannel.GetPixel(x, y).r;    // Blue kanalındaki değer
-                float a = AlphaChannel.GetPixel(x, y).r;   // Alpha kanalındaki değer
+                float r = 0; //= RedChannel.GetPixel(x, y).r;     // Red kanalındaki değer
+                if (Image_1_ChannelOption == ChannelOption.R)
+                {
+                    r = Image1.GetPixel(x, y).r;
+                }
+                else if (Image_1_ChannelOption == ChannelOption.G)
+                {
+                    r = Image1.GetPixel(x, y).g;
+                }
+                else if (Image_1_ChannelOption == ChannelOption.B)
+                {
+                    r = Image1.GetPixel(x, y).b;
+                }
+                else if (Image_1_ChannelOption == ChannelOption.A)
+                {
+                    r = Image1.GetPixel(x, y).a;
+                }
 
+
+                float g = 0;// = GreenChannel.GetPixel(x, y).r;   // Green kanalındaki değer
+                if (Image_2_ChannelOption == ChannelOption.R)
+                {
+                    g = Image2.GetPixel(x, y).r;
+                }
+                else if (Image_2_ChannelOption == ChannelOption.G)
+                {
+                    g = Image2.GetPixel(x, y).g;
+                }
+                else if (Image_2_ChannelOption == ChannelOption.B)
+                {
+                    g = Image2.GetPixel(x, y).b;
+                }
+                else if (Image_2_ChannelOption == ChannelOption.A)
+                {
+                    g = Image2.GetPixel(x, y).a;
+                }
+
+
+                float b = 0;// = BlueChannel.GetPixel(x, y).r;    // Blue kanalındaki değer
+                if (Image_3_ChannelOption == ChannelOption.R)
+                {
+                    b = Image3.GetPixel(x, y).r;
+                }
+                else if (Image_3_ChannelOption == ChannelOption.G)
+                {
+                    b = Image3.GetPixel(x, y).g;
+                }
+                else if (Image_3_ChannelOption == ChannelOption.B)
+                {
+                    b = Image3.GetPixel(x, y).b;
+                }
+                else if (Image_3_ChannelOption == ChannelOption.A)
+                {
+                    b = Image3.GetPixel(x, y).a;
+                }
+
+
+                float a = 0;// = AlphaChannel.GetPixel(x, y).r;   // Alpha kanalındaki değer
+
+                if (Image_4_ChannelOption == ChannelOption.R)
+                {
+                    a = Image4.GetPixel(x, y).r;
+                }
+                else if (Image_4_ChannelOption == ChannelOption.G)
+                {
+                    a = Image4.GetPixel(x, y).g;
+                }
+                else if (Image_4_ChannelOption == ChannelOption.B)
+                {
+                    a = Image4.GetPixel(x, y).b;
+                }
+                else if (Image_4_ChannelOption == ChannelOption.A)
+                {
+                    a = Image4.GetPixel(x, y).a;
+                }
                 // Yeni renk oluştur ve piksele ata
                 Color newColor = new Color(r, g, b, a);
                 newTexture.SetPixel(x, y, newColor);
@@ -181,7 +324,7 @@ public class EditorCombineTextureChannel : EditorWindow
             SaveTextureAsPNG(newTexture, path);
         }
 
-        
+
         // if (!string.IsNullOrEmpty(path))
         // {
         //     // Texture'u PNG formatında kaydet
